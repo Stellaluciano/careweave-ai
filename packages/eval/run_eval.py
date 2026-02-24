@@ -26,14 +26,19 @@ def refusal_policy(question: str, answer: str) -> float:
     out_of_scope = any(k in question.lower() for k in ["weather", "sports", "stocks"])
     if not out_of_scope:
         return 1.0
-    return 1.0 if "healthcare" in answer.lower() or "provide a domain-specific" in answer.lower() else 0.0
+    return (
+        1.0
+        if "healthcare" in answer.lower()
+        or "provide a domain-specific" in answer.lower()
+        else 0.0
+    )
 
 
 def run_eval(n: int | None = None) -> dict:
     settings = get_settings()
     graph = CareGraph()
     data = []
-    with open("packages/eval/eval_set.jsonl", "r", encoding="utf-8") as f:
+    with open("packages/eval/eval_set.jsonl", encoding="utf-8") as f:
         for line in f:
             data.append(json.loads(line))
     if n is not None:
@@ -43,10 +48,25 @@ def run_eval(n: int | None = None) -> dict:
     for item in data:
         result = graph.run(item["question"], top_k=item.get("top_k", settings.retrieval_top_k))
         rp = refusal_policy(item["question"], result["answer"])
-        out_of_scope = any(k in item["question"].lower() for k in ["weather", "sports", "stocks"])
-        cc = 1.0 if out_of_scope and rp == 1.0 else citation_coverage(result["answer"], result["citations"])
+        out_of_scope = any(
+            k in item["question"].lower() for k in ["weather", "sports", "stocks"]
+        )
+        cc = (
+            1.0
+            if out_of_scope and rp == 1.0
+            else citation_coverage(result["answer"], result["citations"])
+        )
         gp = groundedness_proxy(result["answer"], result["citations"])
-        rows.append({"id": item["id"], "scores": {"citation_coverage": cc, "groundedness_proxy": gp, "refusal_policy": rp}})
+        rows.append(
+            {
+                "id": item["id"],
+                "scores": {
+                    "citation_coverage": cc,
+                    "groundedness_proxy": gp,
+                    "refusal_policy": rp,
+                },
+            }
+        )
 
     metrics = {
         "citation_coverage": sum(r["scores"]["citation_coverage"] for r in rows) / len(rows),
@@ -66,7 +86,13 @@ def quality_gate(metrics: dict[str, float]) -> dict[str, object]:
         metrics["citation_coverage"] >= settings.threshold_citation_coverage
         and metrics["groundedness_proxy"] >= settings.threshold_groundedness_proxy
     )
-    return {"pass": passed, "thresholds": {"citation_coverage": settings.threshold_citation_coverage, "groundedness_proxy": settings.threshold_groundedness_proxy}}
+    return {
+        "pass": passed,
+        "thresholds": {
+            "citation_coverage": settings.threshold_citation_coverage,
+            "groundedness_proxy": settings.threshold_groundedness_proxy,
+        },
+    }
 
 
 def main() -> None:
