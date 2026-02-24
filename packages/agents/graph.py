@@ -24,7 +24,13 @@ class CareGraph:
         trace: list[dict[str, str | bool | int]] = []
 
         self._planner(state)
-        trace.append({"step": "planner", "retrieval_used": state.retrieval_used, "summary": state.plan_summary})
+        trace.append(
+            {
+                "step": "planner",
+                "retrieval_used": state.retrieval_used,
+                "summary": state.plan_summary,
+            }
+        )
 
         if state.retrieval_used:
             self._retriever(state)
@@ -44,14 +50,19 @@ class CareGraph:
     def _planner(self, state: GraphState) -> None:
         keywords = ["trial", "treatment", "clinical", "disease", "biomarker", "care"]
         state.retrieval_used = any(k in state.question.lower() for k in keywords)
-        state.plan_summary = "retrieve evidence" if state.retrieval_used else "general safe response"
+        state.plan_summary = (
+            "retrieve evidence" if state.retrieval_used else "general safe response"
+        )
 
     def _retriever(self, state: GraphState) -> None:
         state.docs = self.retriever.retrieve(state.question, state.top_k)
 
     def _synthesizer(self, state: GraphState) -> None:
         if not state.retrieval_used:
-            state.answer = "I can help with healthcare intelligence questions. Please provide a domain-specific question."
+            state.answer = (
+                "I can help with healthcare intelligence questions. "
+                "Please provide a domain-specific question."
+            )
             return
         if not state.docs:
             state.answer = "I couldn't find supporting evidence in the local corpus."

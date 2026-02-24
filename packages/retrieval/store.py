@@ -33,7 +33,12 @@ class InMemoryRetrievalBackend(RetrievalBackend):
         docs: list[RetrievedDoc] = []
         for file in files:
             text = file.read_text(encoding="utf-8")
-            chunks = chunk_text(file.stem, text, self.settings.chunk_size, self.settings.chunk_overlap)
+            chunks = chunk_text(
+                file.stem,
+                text,
+                self.settings.chunk_size,
+                self.settings.chunk_overlap,
+            )
             docs.extend(RetrievedDoc(source_id=c.source_id, text=c.text, score=0.0) for c in chunks)
         self.docs = docs
         return len(docs)
@@ -70,7 +75,12 @@ class ChromaRetrievalBackend(InMemoryRetrievalBackend):
             self.collection.delete(ids=existing["ids"])
         for file in files:
             text = file.read_text(encoding="utf-8")
-            chunks = chunk_text(file.stem, text, self.settings.chunk_size, self.settings.chunk_overlap)
+            chunks = chunk_text(
+                file.stem,
+                text,
+                self.settings.chunk_size,
+                self.settings.chunk_overlap,
+            )
             if not chunks:
                 continue
             ids = [f"{file.stem}-{i}" for i in range(len(chunks))]
@@ -88,7 +98,13 @@ class ChromaRetrievalBackend(InMemoryRetrievalBackend):
             result.get("metadatas", [[]])[0],
             result.get("distances", [[]])[0],
         ):
-            docs.append(RetrievedDoc(source_id=meta.get("source_id", "unknown"), text=doc, score=1 - float(distance)))
+            docs.append(
+                RetrievedDoc(
+                    source_id=meta.get("source_id", "unknown"),
+                    text=doc,
+                    score=1 - float(distance),
+                )
+            )
         return docs
 
 
