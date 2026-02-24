@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import MutableMapping
+from typing import Any
 
 
 def configure_logging() -> None:
@@ -11,7 +13,12 @@ def configure_logging() -> None:
 
 
 class RequestLoggerAdapter(logging.LoggerAdapter):
-    def process(self, msg: str, kwargs: dict) -> tuple[str, dict]:
+    def process(
+        self,
+        msg: str,
+        kwargs: MutableMapping[str, Any],
+    ) -> tuple[str, MutableMapping[str, Any]]:
         kwargs.setdefault("extra", {})
-        kwargs["extra"].setdefault("request_id", self.extra.get("request_id", "-"))
+        extra = self.extra or {}
+        kwargs["extra"].setdefault("request_id", extra.get("request_id", "-"))
         return msg, kwargs
