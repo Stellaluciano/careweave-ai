@@ -1,0 +1,35 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  test-and-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Build index
+        run: python -m packages.retrieval.build_index
+      - name: Lint
+        run: ruff check .
+      - name: Type check
+        run: mypy apps packages
+      - name: Tests
+        run: pytest -q
+      - name: Eval gate
+        run: python -m packages.eval.run_eval --n 4
+
+  docker-build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -f infra/docker/Dockerfile -t careweave:latest .
